@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{url_for('static', filename='css/main.css')}}">
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.8.1/mapbox-gl.css' rel='stylesheet' />
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.8.1/mapbox-gl.js'></script>
+    <link rel="shortcut icon" type="image/png" href="static/images/favicon.png"/>
+    {% block head %} {% endblock %}
+</head>
+
+<header id="headerTop">
+    <div class="divHeader">
+        <h1 class="textLogo_header">GrainParisArt</h1>
+        <p>Quand ça va pas, y aura toujours le cinéma</p>
+    </div>
+</header>
+<body>
+    {% block body %} {% endblock %}
+</body> 
+
+<footer>
+    <div class="container_footer">
+        <p>Fait avec amour par Solène Derniaux</p>
+        <p>©Tous droits réservés</p>
+    </div>
+</footer>
+</html>

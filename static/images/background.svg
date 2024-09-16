@@ -1,0 +1,31 @@
+<svg class="background_svg" viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <filter id="b" x="-500" y="-500" width="2000" height="2000" filterUnits="userSpaceOnUse">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="50" />
+        </filter>
+        <filter id="a" x="-500" y="-500" width="2000" height="2000" filterUnits="userSpaceOnUse">
+            <feFlood flood-color="#fff" result="neutral-gray" />
+            <feTurbulence type="fractalNoise" baseFrequency="2.5" numOctaves="100" stitchTiles="stitch"
+                result="noise" />
+            <feColorMatrix in="noise" type="saturate" values="0" result="destaturatedNoise" />
+            <feComponentTransfer in="desaturatedNoise" result="theNoise">
+                <feFuncA type="table" tableValues="0 0 0.1 0" />
+            </feComponentTransfer>
+            <feBlend in="SourceGraphic" in2="theNoise" mode="soft-light" result="noisy-image" />
+        </filter>
+        <radialGradient id="c" cx="50%" cy="50%" r="50%" fx="20%" fy="40%">
+            <stop offset="0%" stop-color="#444cf7" />
+            <stop offset="100%" stop-color="rgba(194,68,247,0.2)" />
+        </radialGradient>
+    </defs>
+    <rect width="100%" height="100%" fill="#fff" />
+    <g filter="url(#a)">
+        <g filter="url(#b)">
+            <svg width="800" height="800" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg"
+                transform="translate(140.997 117.996)">
+                <path fill="url(#c)"
+                    d="M993.5 849.5Q888 1099 622 1061T226.5 811.5Q97 600 220 377t362.5-192q239.5 31 378 223t33 441.5Z" />
+            </svg>
+        </g>
+    </g>
+</svg>
