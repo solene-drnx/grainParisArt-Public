@@ -1,94 +1,104 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template
 from datetime import datetime
 from flask_caching import Cache
-import asyncio
-
+from datetime import datetime, timedelta
 # IMPORT DES MODULES 
-from modules.date import chiffre_intoMonth, anglais_intoJourFrancais, testChiffreJour, testMoisNumero
-from modules.scraping import scrap_infoFilm, get_data, cleanFilms
-from modules.urlGenerator import decalageDate
+from modules.date import anglais_intoJourFrancais, testChiffreJour, testMoisNumero
+from modules.scraping import get_data, cleanFilms
 
 app = Flask(__name__)
 cache = Cache(app, config={'CACHE_TYPE': 'simple'})
+def format_date(date):
+    return date.strftime('%Y-%m-%d')
+
 
 def jour_general(jour_num):
+   
+    if jour_num == 0:
+        jour_num += 1
+
+    dates = [format_date(datetime.today() + timedelta(days=i)) for i in range(7)]
     date = {
-        f"jour{i}": {
-            "jour": anglais_intoJourFrancais(datetime.today().strftime("%A"), i-1),
-            "chiffre": testChiffreJour(datetime.today().day, i-1),
-            "mois": testMoisNumero(datetime.today().month, i-1)
-        } for i in range(1, 8)
+        f"jour{i + 1}": {
+            "jour": anglais_intoJourFrancais(datetime.today().strftime("%A"), i),
+            "chiffre": testChiffreJour(datetime.today().day, i),
+            "mois": testMoisNumero(datetime.today().month, i)
+        } for i in range(7)
     }
+   
 
     cinemas = [
         {
-            "salle" : "Écoles Cinéma Club",
-            "url" : "https://www.allocine.fr/seance/salle_gen_csalle=C0071.html"
+            "salle": "Écoles Cinéma Club",
+            "url": "C0071"
         },
         {
-            "salle" : "MK2 Bibliothèque",
-            "url" : "https://www.allocine.fr/seance/salle_gen_csalle=C2954.html",
+            "salle": "MK2 Bibliothèque",
+            "url": "C2954"
         },
         {
-            "salle" : "MK2 Beaubourg",
-            "url" : "https://www.allocine.fr/seance/salle_gen_csalle=C0050.html"
-        }, 
-        {
-            "salle" : "Épée de bois",
-            "url" : "https://www.allocine.fr/seance/salle_gen_csalle=W7504.html"
-        }, 
-        {
-            "salle" : "Cinéma du Panthéon",
-            "url" : "https://www.allocine.fr/seance/salle_gen_csalle=C0076.html"
+            "salle": "MK2 Beaubourg",
+            "url": "C0050"
         },
         {
-            "salle" : "Max Linder Panorama",
-            "url" : "https://www.allocine.fr/seance/salle_gen_csalle=C0089.html"
+            "salle": "Épée de bois",
+            "url": "W7504"
         },
         {
-            "salle" : "Luminor Hotel de Ville",
-            "url" : "https://www.allocine.fr/seance/salle_gen_csalle=C0013.html"
+            "salle": "Cinéma du Panthéon",
+            "url": "C0076"
         },
         {
-            "salle" : "Le Grand Action",
-            "url" : "https://www.allocine.fr/seance/salle_gen_csalle=C0072.html"
+            "salle": "Max Linder Panorama",
+            "url": "C0089"
         },
         {
-            "salle" : "MK2 Parnasse", 
-            "url" : "https://www.allocine.fr/seance/salle_gen_csalle=C0099.html"
-        },
-        { 
-            "salle" : "Le Champo",
-            "url" : "https://www.allocine.fr/seance/salle_gen_csalle=C0073.html"
+            "salle": "Luminor Hotel de Ville",
+            "url": "C0013"
         },
         {
-            "salle" : "Filmothèque du Quartier Latin",
-            "url" : "https://www.allocine.fr/seance/salle_gen_csalle=C0020.html"
+            "salle": "Le Grand Action",
+            "url": "C0072"
         },
         {
-            "salle" : "Reflet Medicis",
-            "url" : "https://www.allocine.fr/seance/salle_gen_csalle=C0074.html"
+            "salle": "MK2 Parnasse",
+            "url": "C0099"
         },
         {
-            "salle" : "UGC Ciné Cité Les Halles",
-            "url" : "https://www.allocine.fr/seance/salle_gen_csalle=C0159.html"
+            "salle": "Le Champo",
+            "url": "C0073"
         },
         {
-            "salle" : "UGC Ciné Cité Bercy",
-            "url" : "https://www.allocine.fr/seance/salle_gen_csalle=C0026.html"
+            "salle": "Filmothèque du Quartier Latin",
+            "url": "C0020"
+        },
+        {
+            "salle": "Reflet Medicis",
+            "url": "C0074"
+        },
+        {
+            "salle": "UGC Ciné Cité Les Halles",
+            "url": "C0159"
+        },
+        {
+            "salle": "UGC Ciné Cité Bercy",
+            "url": "C0026"
         }
     ]
 
-    films = get_data(cinemas)
+    films = get_data(cinemas, dates[jour_num-1])
     filmsClean = cleanFilms(films)
 
-    return render_template(f'jours/jour{jour_num}.html', page_actuelle=f'jour{jour_num}', films=filmsClean, date=date)
+    if jour_num == 0:
+        return render_template('index.html', page_actuelle='home', films=filmsClean, date=date)
+    else:
+        return render_template(f'jours/jour{jour_num}.html', page_actuelle=f'jour{jour_num}', films=filmsClean, date=date)
 
 
 @app.route('/')
 @cache.cached(timeout=3600)
 def home():
-    return jour_general(1)
+    return jour_general(0)
 
 @app.route('/jour1')
 @cache.cached(timeout=3600)
