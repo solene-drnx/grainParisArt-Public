@@ -1,141 +1,122 @@
-from bs4 import BeautifulSoup
 import requests
 import requests_cache
 from datetime import timedelta
 from modules.firebase import enregistrementFilm, recupererDataFilm
-
+import re
+from datetime import datetime
 
 requests_cache.install_cache('film_cache', expire_after=timedelta(minutes=5))
 
-# Récolte les données
-def scrap_infoFilm(url, cinema):
+
+
+def scrap_infoFilm(date, cinema):
+    
+    url = f"https://www.allocine.fr/_/showtimes/theater-{cinema["url"]}/d-{date}/"
+    print(url)
+    
     films = []
     response = requests.get(url)
-    reponse_text = response.text
-    soupReponse = BeautifulSoup(reponse_text, 'html.parser')
 
-    # films_list = soupReponse.find('div', class_="showtimes-list-holder").find_all('div', class_="card entity-card entity-card-list movie-card-theater cf hred")
-    films_list_container = soupReponse.find('div', class_="showtimes-list-holder")
-    if films_list_container:
-        films_list = films_list_container.find_all('div', class_="card entity-card entity-card-list movie-card-theater cf hred")
-        for film in films_list:
-            titre = film.find("div", class_="meta").find('h2', class_="meta-title").find("a").get_text()
-            realisateur_section = film.find("div", class_="meta-body-item meta-body-direction")
+    data = response.json()
+    if not data.get('error') and 'results' in data:
+        for film_data in data['results']:
 
-            if realisateur_section:
-                realisateur = realisateur_section.find('span', class_="dark-grey-link").get_text()
+            all_showtimes = []
+
+            movie = film_data['movie']
+            showtimes = film_data['showtimes']
+            titre = movie['title']
+            realisateur = ', '.join([
+                f"{credit['person']['firstName'] or ''} {credit['person']['lastName'] or ''}".strip()
+                for credit in movie.get('credits', []) 
+                if credit['position']['name'] == 'DIRECTOR'
+            ])
+            synopsis = movie['synopsis']
+            img_url = movie['poster']['url'] if movie.get('poster') else 'Image non disponible'
+            runtime = movie['runtime']
+            genres = [genre['translate'] for genre in movie['genres']]
+            casting = [
+                f"{edge['node']['actor']['firstName'] or 'Inconnu'} {edge['node']['actor']['lastName'] or 'Inconnu'}"
+                for edge in movie.get('cast', {}).get('edges', [])
+                if edge['node']['actor'] is not None
+            ]
+            match = re.match(r'(?P<heures>\d+)h (?P<minutes>\d+)min', runtime)
+
+            if match:
+                heures = int(match.group('heures'))
+                minutes = int(match.group('minutes'))
             else:
-                realisateur = "Réalisateur non trouvé"
+                heures = 0
+                minutes = 0
 
-            dataFilm_firebase = recupererDataFilm(titre, realisateur)
+            for type_showtime in ['dubbed', 'original', 'local', 'multiple']:
+                horaires = showtimes.get(type_showtime, [])
+                for horaire in horaires:
+                    start_time = horaire['startsAt']
+                    start_datetime = datetime.fromisoformat(start_time)
+                    formatted_time = f"{start_datetime.hour}h{start_datetime.minute:02d}"
+                    all_showtimes.append(formatted_time)
+
+
+            dataFilm_firebase = recupererDataFilm(f"{titre}", f"{realisateur}")
+
+            print(dataFilm_firebase)
             if dataFilm_firebase == 0:
-                # Extraction de l'image
-                thumbnail_img = film.find('img', class_='thumbnail-img')
-                if thumbnail_img and not thumbnail_img['src'].startswith('data:image'):
-                    img_url = thumbnail_img['src']
-                else:
-                    urlAffiche = "https://www.allocine.fr" + film.find("div", class_="meta").find('h2', class_="meta-title").find("a")['href']
-                    responseAffiche = requests.get(urlAffiche)
-                    pageFilm = BeautifulSoup(responseAffiche.text, 'html.parser')
-                    thumbnail_img = pageFilm.find('img', class_='thumbnail-img')
-                    img_url = thumbnail_img['src'] if thumbnail_img and not thumbnail_img['src'].startswith('data:image') else 'Image de la vignette non trouvée'
-
-                synopsis = film.find('div', class_="synopsis").find('div', class_="content-txt").get_text() if film.find('div', class_="synopsis") else "synopsis non trouvé"
-                acteur_container = film.find("div", class_="meta-body-item meta-body-actor")
-                acteurs = [acteur.get_text() for acteur in acteur_container.find_all("span", class_="dark-grey-link")] if acteur_container else ["acteurs non trouvés"]
-
-                horaire_sections = film.find_all("div", class_="showtimes-hour-block")
-                horaires = [horaire_section.find('span', class_="showtimes-hour-item-value").get_text() for horaire_section in horaire_sections if horaire_section.find('span', class_="showtimes-hour-item-value")] or ["Horaire non trouvé"]
-
-                genre_container = film.find("div", class_="meta-body-item meta-body-info")
-                genres = [span.get_text().strip() for span in genre_container.find_all("span") if 'class' in span.attrs and not span.attrs['class'][0].startswith('spacer') and 'nationality' not in span.attrs['class']] if genre_container else ["Genre non trouvé"]
-                if genres: genres.pop(0)
-
-                # Récupération de la durée du film
-                url = "https://api.themoviedb.org/3/search/movie?query=" + titre
-
-                headers = {
-                    "accept": "application/json",
-                    "Authorization": "###"
-                }
-
-                response = requests.get(url, headers=headers)
-
-                if response.status_code == 200:
-                    data = response.json()
-                    if data['results']:
-                        film_id = data['results'][0]['id']
-                        url = "https://api.themoviedb.org/3/movie/" + str(film_id)
-                        response = requests.get(url, headers=headers)
-
-                        data = response.json()
-                        duree_film = data['runtime']
-
-                        heure = duree_film // 60
-                        minute = duree_film % 60
-                    else:
-                        heure = 0
-                        minute = 0
-                else:
-                    heure = 0
-                    minute = 0
-
                 film_data = {
                     "titre": titre,
-                    "realisateur": realisateur,
-                    "casting": acteurs,
-                    "genres": genres,
-                    "duree": {"heure": heure, "minute": minute},
+                    "realisateur": realisateur if realisateur else "Réalisateur non trouvé",
+                    "casting": casting if casting else ["Acteurs non trouvés"],
+                    "genres": genres if genres else ["Genre non trouvé"],
+                    "duree" :{"heure": heures, "minute": minutes},
                     "affiche": img_url,
                     "synopsis": synopsis,
                     "horaires": [
                         {
-                            "cinema": cinema,
-                            "seances": horaires
+                            "cinema": cinema["salle"],
+                            "seances": all_showtimes if all_showtimes else ["Horaire non trouvé"]
                         }
                     ]
                 }
+            
+                films.append(film_data)
                 enregistrementFilm(film_data)
-                print(f"{film_data['titre']} : enregistré dans la db")
             else:
-                horaire_sections = film.find_all("div", class_="showtimes-hour-block")
-                horaires = [horaire_section.find('span', class_="showtimes-hour-item-value").get_text() for horaire_section in horaire_sections if horaire_section.find('span', class_="showtimes-hour-item-value")] or ["Horaire non trouvé"]
 
                 film_data = {
-                    "titre": dataFilm_firebase['titre'],
-                    "realisateur": dataFilm_firebase['realisateur'],
-                    "casting": dataFilm_firebase['casting'],
-                    'genres': ['Drame', 'Romance'], 
-                    "duree": dataFilm_firebase['duree'],
-                    "affiche": dataFilm_firebase['affiche'],
-                    "synopsis": dataFilm_firebase['synopsis'],
-                    "horaires": [
-                        {
-                            "cinema": cinema,
-                            "seances": horaires
-                        }
-                    ]
-                }
+                        "titre": dataFilm_firebase['titre'],
+                        "realisateur": dataFilm_firebase['realisateur'],
+                        "casting": dataFilm_firebase['casting'],
+                        'genres': ['Drame', 'Romance'], 
+                        "duree": dataFilm_firebase['duree'],
+                        "affiche": dataFilm_firebase['affiche'],
+                        "synopsis": dataFilm_firebase['synopsis'],
+                        "horaires": [
+                            {
+                                "cinema": cinema,
+                                "seances": all_showtimes if all_showtimes else ["Horaire non trouvé"]
+                            }
+                        ]
+                    }
+           
                 print(f"{film_data['titre']} : récupéré dans la db")
 
-            # Ajout du film s'il n'existe pas déjà
-            existing_film = next((f for f in films if f["titre"] == titre), None)
-            if existing_film:
-                existing_film["horaires"].append({
-                    "cinema": cinema,
-                    "seances": horaires
-                })
-            else:
-                films.append(film_data)
-    else:
-        print(f"L'élément 'showtimes-list-holder' n'a pas été trouvé pour l'URL {url}")
-        films_list = []
-    return films
+    
+                existing_film = next((f for f in films if f["titre"] == titre), None)
+                if existing_film:
+                    existing_film["horaires"].append({
+                        "cinema": cinema,
+                        "seances": all_showtimes if all_showtimes else ["Horaire non trouvé"]
+                    })
+                else:
+                    films.append(film_data)
+      
+    return films 
 
-def get_data(cinemas):
+
+def get_data(cinemas, date):
     films = []
     for cinema in cinemas:
-        result = scrap_infoFilm(cinema["url"], cinema["salle"])
+        result = scrap_infoFilm(date, cinema)
         films.extend(result)
     return films
 
