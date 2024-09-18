@@ -62,8 +62,10 @@ def getShowtimes(date):
 
     return data
 
-showtimes = getShowtimes(datetime.today()+timedelta(days=1))
-print("Séances récupéré!")
+showtimes = []
+for i in range(0, 7):
+    print(f"Séances récupéré {i+1}/7!")
+    showtimes.append(getShowtimes(datetime.today()+timedelta(days=i)))
 
 app = Flask(__name__)
 
@@ -114,7 +116,7 @@ def home():
             "index": i
         })
 
-    return render_template('index.html', page_actuelle='home', films=showtimes, dates=dates)
+    return render_template('index.html', page_actuelle='home', films=showtimes[delta], dates=dates)
 
 if __name__ == '__main__':
     app.run() 
