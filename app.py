@@ -107,7 +107,7 @@ def home():
     dates = []
 
     for i in range(0,7):
-        day = datetime.today()+timedelta(i+delta)
+        day = datetime.today()+timedelta(i)
         dates.append({
             "jour": translateDay(day.weekday()),
             "chiffre": day.day,
