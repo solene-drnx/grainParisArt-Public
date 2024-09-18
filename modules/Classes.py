@@ -13,7 +13,8 @@ class Movie:
         try:
             self.affiche = data["poster"]["url"]
         except:
-            self.affiche = "https://upload.wikimedia.org/wikipedia/commons/a/a3/Image-not-found.png" #TODO: Remplacer par une joli image qui fait 1067x1600
+            self.affiche = "/static/images/nocontent.png"
+            
         self.cast = []
 
         # Noms des acteurs
