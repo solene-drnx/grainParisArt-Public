@@ -51,6 +51,8 @@ def getShowtimes(date):
                 "synopsis": movie.synopsis,
                 "affiche": movie.affiche,
                 "director": movie.director,
+                "wantToSee": movie.wantToSee,
+                "url": f"https://www.allocine.fr/film/fichefilm_gen_cfilm={movie.id}.html",
                 "seances": {}
             }
 
@@ -59,6 +61,10 @@ def getShowtimes(date):
             data[movie.title]["seances"][theater.name] = []
 
         data[movie.title]["seances"][theater.name].append(showtime.startsAt.strftime("%H:%M"))
+
+    data = data.values()
+
+    data = sorted(data, key=lambda x: x["wantToSee"], reverse=True)
 
     return data
 

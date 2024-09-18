@@ -43,13 +43,13 @@
         </div>
         <div class="line"></div>
     </div>
-    {% for film in films.values() %}
+    {% for film in films %}
     <div class="container_infoFilm">
         <img src={{ film.affiche }} class="affiche" />
         <div class="infoFilm">
             <div class="blur-background"></div>
             <div>
-                <h3 class="titreFilm">{{film.title}}</h3>
+                <h3 class="titreFilm"><a href="{{ film.url }}">{{film.title}}</a></h3>
                 <div class="info-content">
                     <p class="realisateur">Réalisateur : {{film.director}}</p>
                     <p class="casting">Casting : {{ film.casting }}</p>
