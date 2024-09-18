@@ -65,10 +65,6 @@ def getShowtimes(date):
 showtimes = getShowtimes(datetime.today()+timedelta(days=1))
 print("Séances récupéré!")
 
-import json
-with open("tmp.json", "w+", encoding="utf-8") as f:
-    json.dump(showtimes, f, ensure_ascii=False, indent=4)
-
 app = Flask(__name__)
 
 def translateMonth(num: int):

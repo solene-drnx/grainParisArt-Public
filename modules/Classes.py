@@ -9,6 +9,7 @@ class Movie:
         self.runtime = data["runtime"]
         self.synopsis = data["synopsis"]
         self.genres = [genre['translate'] for genre in data["genres"]]
+        self.wantToSee = data['stats']["wantToSeeCount"]
         try:
             self.affiche = data["poster"]["url"]
         except:
