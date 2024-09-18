@@ -67,32 +67,39 @@ class Theater:
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} name={self.name}>"
 
-    def getShowtimes(self, date:datetime) -> list[Showtime]:
+    def getShowtimes(self, date: datetime, page: int = 1, showtimes: list = None) -> list[Showtime]:
+        if showtimes is None:
+            showtimes = []
+        
         datestr = date.strftime("%Y-%m-%d")
-        r = requests.get(f"https://www.allocine.fr/_/showtimes/theater-{self.id}/d-{datestr}/")
+        r = requests.get(f"https://www.allocine.fr/_/showtimes/theater-{self.id}/d-{datestr}/p-{page}/")
+        
         if r.status_code != 200:
-            return {"error": True, "messag": r.status_code, "content": r.content}
+            raise Exception(f"Error: {r.status_code} - {r.content}")
         
         try:
             data = r.json()
-        except:
-            return {"error": True, "message": "Can't parse JSON", "content": r.content}
+        except Exception as e:
+            raise Exception(f"Can't parse JSON: {str(e)} - {r.content}")
         
-        if data['error']:
-            return {"error": True, "message": "Error in request", "content": data}
-        
-        showtimes = []
+        if data["message"] == "no.showtime.error":
+            return []
 
+        if data.get('error'):
+            raise Exception(f"API Error: {data}")
+        
         for movie in data['results']:
             inst = Movie(movie["movie"])
-            movie_showtimes = []
-            movie_showtimes.extend(movie["showtimes"]["dubbed"])
-            movie_showtimes.extend(movie["showtimes"]["original"])
-            movie_showtimes.extend(movie["showtimes"]["local"])
+            movie_showtimes = movie["showtimes"].get("dubbed", []) + \
+                            movie["showtimes"].get("original", []) + \
+                            movie["showtimes"].get("local", [])
 
             for showtime_data in movie_showtimes:
                 showtimes.append(Showtime(showtime_data, self, inst))
-
+        
+        if int(data['pagination']['page']) < int(data['pagination']["totalPages"]):
+            return self.getShowtimes(date, page + 1, showtimes)
+        
         return showtimes
     
     @staticmethod
