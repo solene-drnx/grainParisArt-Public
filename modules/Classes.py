@@ -84,6 +84,9 @@ class Theater:
         
         if data["message"] == "no.showtime.error":
             return []
+        
+        if data["message"] == "next.showtime.on":
+            return []
 
         if data.get('error'):
             raise Exception(f"API Error: {data}")
