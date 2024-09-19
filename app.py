@@ -70,8 +70,9 @@ def getShowtimes(date):
 
 showtimes = []
 for i in range(0, 7):
-    print(f"Séances récupéré {i+1}/7!")
-    showtimes.append(getShowtimes(datetime.today()+timedelta(days=i)))
+    day_showtimes = getShowtimes(datetime.today()+timedelta(days=i))
+    showtimes.append(day_showtimes)
+    print(f"{len(day_showtimes)} séances récupéré {i+1}/7!")
 
 app = Flask(__name__)
 
