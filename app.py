@@ -104,7 +104,6 @@ def translateDay(weekday: int):
         case _: return "???"
 
 @app.route('/')
-@app.route('/index')
 def home():
     delta = request.args.get("delta", default=0, type=int)
 
