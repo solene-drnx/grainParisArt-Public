@@ -103,6 +103,10 @@ def translateDay(weekday: int):
         case 6: return "dim"
         case _: return "???"
 
+@app.route('/health')
+def health():
+    return "OK"
+
 @app.route('/')
 def home():
     delta = request.args.get("delta", default=0, type=int)
