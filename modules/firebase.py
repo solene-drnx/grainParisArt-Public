@@ -27,7 +27,8 @@ def encode_node_name(name):
         '#': '__hash__',
         '[': '__lbrack__',
         ']': '__rbrack__',
-        '/': '__slash__'
+        '/': '__slash__',
+        '?': '__question__'
     }
     
     for char, replacement in replacements.items():
