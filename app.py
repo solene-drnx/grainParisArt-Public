@@ -1,3 +1,4 @@
+import dotenv
 import json
 import os
 from flask import Flask, render_template, request
@@ -5,6 +6,9 @@ from datetime import datetime, timedelta
 
 # IMPORT DES MODULES 
 from modules.Classes import *
+
+# On charge les variables d'environnement par défaut pour avoir la liste des cinémas
+dotenv.load_dotenv(".env.sample")
 
 WEBSITE_TITLE = os.environ.get("WEBSITE_TITLE", "GrainParisArt")
 MAPBOX_TOKEN = os.environ.get("MAPBOX_TOKEN", "")
