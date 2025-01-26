@@ -1,33 +1,32 @@
+import json
+import os
 from flask import Flask, render_template, request
 from datetime import datetime, timedelta
 
 # IMPORT DES MODULES 
 from modules.Classes import *
 
-cinemas = {
-    "C0071": "Écoles Cinéma Club",
-    "C2954": "MK2 Bibliothèque",
-    "C0050": "MK2 Beaubourg",
-    "W7504": "Épée de bois",
-    "C0076": "Cinéma du Panthéon",
-    "C0089": "Max Linder Panorama",
-    "C0013": "Luminor Hotel de Ville",
-    "C0072": "Le Grand Action",
-    "C0099": "MK2 Parnasse",
-    "C0073": "Le Champo",
-    "C0020": "Filmothèque du Quartier Latin",
-    "C0074": "Reflet Medicis",
-    "C0159": "UGC Ciné Cité Les Halles",
-    "C0026": "UGC Ciné Cité Bercy"
-}
+WEBSITE_TITLE = os.environ.get("WEBSITE_TITLE", "GrainParisArt")
+MAPBOX_TOKEN = os.environ.get("MAPBOX_TOKEN", "")
+
+theaters_json = json.loads(os.environ.get("THEATERS", "[]"))
 
 theaters: list[Theater] = []
-for id, name in cinemas.items():
+for theater in theaters_json:
     theaters.append(Theater({
-        "name": name,
-        "internalId": id,
+        "name": theater["name"],
+        "internalId": theater["id"],
+        "latitude": theater["latitude"],
+        "longitude": theater["longitude"],
         "location": None
     }))
+
+theater_locations = []
+for theater in theaters:
+    theater_locations.append({
+        "coordinates": [theater.longitude, theater.latitude],
+        "description": theater.name,
+    })
 
 def getShowtimes(date):
     showtimes:list[Showtime] = []
@@ -126,7 +125,15 @@ def home():
             "index": i
         })
 
-    return render_template('index.html', page_actuelle='home', films=showtimes[delta], dates=dates)
+    return render_template(
+        'index.html',
+        page_actuelle='home',
+        films=showtimes[delta],
+        dates=dates,
+        theater_locations=theater_locations,
+        website_title=WEBSITE_TITLE,
+        mapbox_token=MAPBOX_TOKEN,
+    )
 
 if __name__ == '__main__':
     app.run() 
