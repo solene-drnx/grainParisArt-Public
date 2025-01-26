@@ -1,15 +1,111 @@
 from flask import Flask, render_template, request
-from datetime import datetime
-from flask_caching import Cache
-import asyncio
+from datetime import datetime, timedelta
 
 # IMPORT DES MODULES 
-from modules.date import chiffre_intoMonth, anglais_intoJourFrancais, testChiffreJour, testMoisNumero
-from modules.scraping import scrap_infoFilm, get_data, cleanFilms
-from modules.urlGenerator import decalageDate
+from modules.Classes import *
+
+cinemas = {
+    "C0071": "Écoles Cinéma Club",
+    "C2954": "MK2 Bibliothèque",
+    "C0050": "MK2 Beaubourg",
+    "W7504": "Épée de bois",
+    "C0076": "Cinéma du Panthéon",
+    "C0089": "Max Linder Panorama",
+    "C0013": "Luminor Hotel de Ville",
+    "C0072": "Le Grand Action",
+    "C0099": "MK2 Parnasse",
+    "C0073": "Le Champo",
+    "C0020": "Filmothèque du Quartier Latin",
+    "C0074": "Reflet Medicis",
+    "C0159": "UGC Ciné Cité Les Halles",
+    "C0026": "UGC Ciné Cité Bercy"
+}
+
+theaters: list[Theater] = []
+for id, name in cinemas.items():
+    theaters.append(Theater({
+        "name": name,
+        "internalId": id,
+        "location": None
+    }))
+
+def getShowtimes(date):
+    showtimes:list[Showtime] = []
+
+    for theater in theaters:
+        showtimes.extend(theater.getShowtimes(date))
+
+    data = {}
+
+    for showtime in showtimes:
+        movie = showtime.movie
+        theater = showtime.theater
+
+        if showtime.movie.title not in data.keys():
+            data[movie.title] = {
+                "title": movie.title,
+                "duree": movie.runtime,
+                "genres": ", ".join(movie.genres),
+                "casting": ", ".join(movie.cast),
+                "realisateur": movie.director,
+                "synopsis": movie.synopsis,
+                "affiche": movie.affiche,
+                "director": movie.director,
+                "wantToSee": movie.wantToSee,
+                "url": f"https://www.allocine.fr/film/fichefilm_gen_cfilm={movie.id}.html",
+                "seances": {}
+            }
+
+            
+        if theater.name not in data[movie.title]["seances"].keys():
+            data[movie.title]["seances"][theater.name] = []
+
+        data[movie.title]["seances"][theater.name].append(showtime.startsAt.strftime("%H:%M"))
+
+    data = data.values()
+
+    data = sorted(data, key=lambda x: x["wantToSee"], reverse=True)
+
+    return data
+
+showtimes = []
+for i in range(0, 7):
+    day_showtimes = getShowtimes(datetime.today()+timedelta(days=i))
+    showtimes.append(day_showtimes)
+    print(f"{len(day_showtimes)} séances récupéré {i+1}/7!")
 
 app = Flask(__name__)
-cache = Cache(app, config={'CACHE_TYPE': 'simple'})
+
+def translateMonth(num: int):
+    match num:
+        case 1: return "janv"
+        case 2: return "févr"
+        case 3: return "mars"
+        case 4: return "avr"
+        case 5: return "mai"
+        case 6: return "juin"
+        case 7: return "juil"
+        case 8: return "août"
+        case 9: return "sept"
+        case 10: return "oct"
+        case 11: return "nov"
+        case 12: return "déc"
+        case _: return "???"
+
+def translateDay(weekday: int):
+    match weekday:
+        case 0: return "lun"
+        case 1: return "mar"
+        case 2: return "mer"
+        case 3: return "jeu"
+        case 4: return "ven"
+        case 5: return "sam"
+        case 6: return "dim"
+        case _: return "???"
+
+@app.route('/health')
+def health():
+    return "OK"
 
 def format(cinema, nb):
     return ({
@@ -77,54 +173,31 @@ cinemas_data = [
 ]
 
 @app.route('/')
-@cache.cached(timeout=3600)
 def home():
-    date = {
-        "jour1" : {
-            "jour" : anglais_intoJourFrancais(datetime.today().strftime("%A"), 0),
-            "chiffre" : testChiffreJour(datetime.today().day, 0),
-            "mois" : testMoisNumero(datetime.today().day, 0)
-        },
-        "jour2" : {
-            "jour" : anglais_intoJourFrancais(datetime.today().strftime("%A"), 1),
-            "chiffre" : testChiffreJour(datetime.today().day, 1),
-            "mois" : testMoisNumero(datetime.today().day, 1)
-        },
-        "jour3" : {
-            "jour" : anglais_intoJourFrancais(datetime.today().strftime("%A"), 2),
-            "chiffre" : testChiffreJour(datetime.today().day, 2),
-            "mois" : testMoisNumero(datetime.today().day, 2)
-        },
-        "jour4" : {
-            "jour" : anglais_intoJourFrancais(datetime.today().strftime("%A"), 3),
-            "chiffre" : testChiffreJour(datetime.today().day, 3),
-            "mois" : testMoisNumero(datetime.today().day, 3)
-        },
-        "jour5" : {
-            "jour" : anglais_intoJourFrancais(datetime.today().strftime("%A"), 4),
-            "chiffre" : testChiffreJour(datetime.today().day, 4),
-            "mois" : testMoisNumero(datetime.today().day, 4)
-        },
-        "jour6" : {
-            "jour" : anglais_intoJourFrancais(datetime.today().strftime("%A"), 5),
-            "chiffre" : testChiffreJour(datetime.today().day, 5),
-            "mois" : testMoisNumero(datetime.today().day, 5)
-        },
-        "jour7" : {
-            "jour" : anglais_intoJourFrancais(datetime.today().strftime("%A"), 6),
-            "chiffre" : testChiffreJour(datetime.today().day, 6),
-            "mois" : testMoisNumero(datetime.today().day, 6)
-        }
-    }
+    delta = request.args.get("delta", default=0, type=int)
 
+<<<<<<< HEAD
     cinemas = cinemas_data;
+=======
+    if delta > 6: delta = 6
+    if delta < 0: delta = 0
+>>>>>>> 142c74e5ab8db960a2486bc4c838a4833b807664
 
-    films = get_data(cinemas)
-    filmsClean = cleanFilms(films)
+    dates = []
 
-    return render_template('index.html', page_actuelle='home', films=filmsClean, date=date)
+    for i in range(0,7):
+        day = datetime.today()+timedelta(i)
+        dates.append({
+            "jour": translateDay(day.weekday()),
+            "chiffre": day.day,
+            "mois": translateMonth(day.month),
+            "choisi": i==delta,
+            "index": i
+        })
 
+    return render_template('index.html', page_actuelle='home', films=showtimes[delta], dates=dates)
 
+<<<<<<< HEAD
 @app.route('/jour1')
 @cache.cached(timeout=3600)
 def jour1():
@@ -433,3 +506,7 @@ def process():
 """
 if __name__ == '__main__':
     app.run(debug=True) 
+=======
+if __name__ == '__main__':
+    app.run() 
+>>>>>>> 142c74e5ab8db960a2486bc4c838a4833b807664
