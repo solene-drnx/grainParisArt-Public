@@ -4,10 +4,12 @@ import os
 from flask import Flask, render_template, request
 from datetime import datetime, timedelta
 
-# IMPORT DES MODULES 
+# IMPORT DES MODULES
 from modules.Classes import *
 
-# On charge les variables d'environnement par défaut pour avoir la liste des cinémas
+# On charge les variables d'environnement...
+dotenv.load_dotenv(".env")
+# et celles par défaut pour avoir la liste des cinémas
 dotenv.load_dotenv(".env.sample")
 
 WEBSITE_TITLE = os.environ.get("WEBSITE_TITLE", "GrainParisArt")
@@ -59,7 +61,7 @@ def getShowtimes(date):
                 "seances": {}
             }
 
-            
+
         if theater.name not in data[movie.title]["seances"].keys():
             data[movie.title]["seances"][theater.name] = []
 
@@ -140,4 +142,4 @@ def home():
     )
 
 if __name__ == '__main__':
-    app.run() 
+    app.run()
