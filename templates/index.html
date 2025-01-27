@@ -89,7 +89,7 @@
 
 
 <script>
-    mapboxgl.accessToken = '###';
+    mapboxgl.accessToken = {{ mapbox_token | tojson }};
 
     var map = new mapboxgl.Map({
         container: 'map',
@@ -100,22 +100,7 @@
 
     map.addControl(new mapboxgl.NavigationControl());
 
-    var locations = [
-        { coordinates: [2.348973, 48.848363], description: "Écoles Cinéma club" },
-        { coordinates: [2.546596, 48.840113], description: "UGC Ciné Cité Noisy-le-Grand" },
-        { coordinates: [2.343014, 48.849777], description: "UGC Ciné Cité les Halles" },
-        { coordinates: [2.342790, 48.849510], description: "Reflet Medicis" },
-        { coordinates: [2.342790, 48.849510], description: "Fimothèque du quartier Latin" },
-        { coordinates: [2.343223, 48.849980], description: "Le Champo" },
-        { coordinates: [2.330526, 48.842813], description: "MK2 Parnasse" },
-        { coordinates: [2.352129, 48.847530], description: "Le Grand Action" },
-        { coordinates: [2.353602, 48.858676], description: "Luminor Hotel de Ville" },
-        { coordinates: [2.344856, 48.871370], description: "Max Linder Panorama" },
-        { coordinates: [2.342385, 48.847488], description: "Cinéma du Panthéon" },
-        { coordinates: [2.349555, 48.841300], description: "Épée de bois" },
-        { coordinates: [2.375488, 48.832448], description: "MK2 Bibliothèque" },
-        { coordinates: [2.352312, 48.861584], description: "MK2 Beaubourg" }
-    ];
+    var locations = {{ theater_locations | tojson }};
 
     locations.forEach(function (location) {
         var el = document.createElement('div');

@@ -1,5 +1,13 @@
+from dataclasses import dataclass
 from datetime import datetime
 import requests
+
+@dataclass
+class Cinema:
+    id: str
+    name: str
+    latitude: float
+    longitude: float
 
 class Movie:
     def __init__(self, data) -> None:
@@ -63,6 +71,8 @@ class Theater:
         self.name = data['name']
         self.id = data['internalId']
         self.location = data['location']
+        self.latitude = data['latitude']
+        self.longitude = data['longitude']
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} name={self.name}>"
